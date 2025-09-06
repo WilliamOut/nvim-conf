@@ -101,6 +101,7 @@ vim.g.have_nerd_font = true
 
 -- Make line numbers default
 vim.o.laststatus = 3
+vim.o.background = 'light'
 vim.o.number = true
 vim.o.relativenumber = true
 vim.o.tabstop = 2
@@ -978,13 +979,12 @@ require('lazy').setup({
       signature = { enabled = true },
     },
   },
-
   {
     'catppuccin/nvim',
     lazy = false,
     name = 'catppuccin',
     opts = {
-      -- suas configurações aqui
+      flavour = 'mocha', -- força usar o mocha
     },
   },
   {
@@ -993,7 +993,6 @@ require('lazy').setup({
       colorscheme = 'catppuccin',
     },
   },
-
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = true } },
   {
