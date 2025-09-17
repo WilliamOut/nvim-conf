@@ -1,0 +1,44 @@
+ ◍ ast-grep ast_grep
+    ◍ biome
+    ◍ checkstyle
+    ◍ clangd
+    ◍ codebook
+    ◍ css-lsp cssls
+    ◍ css-variables-language-server css_variables
+    ◍ cssmodules-language-server cssmodules_ls
+    ◍ docker-compose-language-service docker_compose_language_service
+    ◍ docker-language-server docker_language_server
+    ◍ dockerfile-language-server dockerls
+    ◍ duster
+    ◍ easy-coding-standard
+    ◍ emmet-ls emmet_ls
+    ◍ eslint-lsp eslint
+    ◍ eslint_d
+    ◍ fixjson
+    ◍ google-java-format
+    ◍ harper-ls harper_ls
+    ◍ html-lsp html
+    ◍ htmlhint
+    ◍ intelephense
+    ◍ java-debug-adapter
+    ◍ java-test
+    ◍ jdtls
+    ◍ js-debug-adapter
+    ◍ lua-language-server lua_ls
+    ◍ oxlint
+    ◍ php-cs-fixer
+    ◍ php-debug-adapter
+    ◍ phpactor
+    ◍ phpcbf
+    ◍ phpcs
+    ◍ phpmd
+    ◍ phpstan
+    ◍ pint
+    ◍ prettier
+    ◍ pretty-php
+    ◍ quick-lint-js quick_lint_js
+    ◍ stylua
+    ◍ tailwindcss-language-server tailwindcss
+    ◍ typescript-language-server ts_ls
+    ◍ vtsls
+    ◍ vue-language-server vue_ls
