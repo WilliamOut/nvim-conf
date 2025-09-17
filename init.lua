@@ -179,12 +179,14 @@ vim.o.confirm = true
 
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
+vim.keymap.set('n', '<C-s>', '<cmd>w<CR>', { desc = 'Save file' })
+vim.keymap.set('i', '<C-s>', '<Esc><cmd>w<CR>', { desc = 'Save file (insert mode)' })
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 vim.keymap.set('n', '<leader>e', '<Cmd>Neotree toggle<CR>', { desc = 'Toggle NeoTree' })
 vim.keymap.set('n', '<leader>o', '<Cmd>Neotree focus<CR>', { desc = 'Focus NeoTree' })
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
-
+local opts = { noremap = true, silent = true }
 -- NOTE: These are the keymaps for the barbar plugin
 -- NOTE: Navegação entre buffers
 vim.keymap.set('n', '<A-,>', '<Cmd>BufferPrevious<CR>', opts)
@@ -332,6 +334,117 @@ require('lazy').setup({
   -- options to `gitsigns.nvim`.
   --
   -- See `:help gitsigns` to understand what the configuration keys do
+  {
+    'akinsho/toggleterm.nvim',
+    version = '*',
+    config = function()
+      require('toggleterm').setup {
+        size = 20,
+        open_mapping = [[<c-\>]],
+        direction = 'horizontal',
+        persist_mode = true,
+        auto_scroll = true,
+        close_on_exit = false,
+      }
+
+      -- Funções personalizadas para executar código
+      local function run_current_file()
+        local filetype = vim.bo.filetype
+        local filename = vim.fn.expand '%:p' -- Caminho absoluto
+        local basename = vim.fn.expand '%:t:r' -- Nome sem extensão
+        local dir = vim.fn.expand '%:p:h' -- Diretório do arquivo
+        local cmd = ''
+
+        -- Comandos específicos para cada linguagem
+        if filetype == 'c' then
+          cmd = string.format('cd "%s" && gcc "%s" -o "%s" && ./"%s"', dir, filename, basename, basename)
+        elseif filetype == 'cpp' then
+          cmd = string.format('cd "%s" && g++ "%s" -o "%s" && ./"%s"', dir, filename, basename, basename)
+        elseif filetype == 'python' then
+          cmd = string.format('cd "%s" && python3 "%s"', dir, filename) -- SEMPRE usa python3
+        elseif filetype == 'javascript' then
+          cmd = string.format('cd "%s" && node "%s"', dir, filename)
+        elseif filetype == 'typescript' then
+          cmd = string.format('cd "%s" && ts-node "%s"', dir, filename)
+        elseif filetype == 'java' then
+          cmd = string.format('cd "%s" && javac "%s" && java "%s"', dir, filename, basename)
+        elseif filetype == 'sh' then
+          cmd = string.format('cd "%s" && bash "%s"', dir, filename)
+        elseif filetype == 'lua' then
+          cmd = string.format('cd "%s" && lua "%s"', dir, filename)
+        else
+          vim.notify('Tipo de arquivo não suportado: ' .. filetype, vim.log.levels.WARN)
+          return
+        end
+
+        -- Adiciona mensagem final e espera por Enter
+        cmd = cmd .. '; echo ""; echo "✅ Execução concluída! Pressione Enter para continuar..."; read'
+
+        -- Executa o comando no toggleterm
+        local Terminal = require('toggleterm.terminal').Terminal
+        local term = Terminal:new {
+          cmd = cmd,
+          direction = 'horizontal',
+          close_on_exit = false,
+        }
+        term:toggle()
+      end
+
+      -- Função para matar processo atual no terminal
+      local function kill_terminal_process()
+        local Terminal = require('toggleterm.terminal').Terminal
+        local term = Terminal:new {
+          cmd = "printf '\\003' && echo '' && echo '🛑 Processo interrompido (Ctrl+C)' && echo ''",
+          direction = 'horizontal',
+          close_on_exit = false,
+        }
+        term:toggle()
+      end
+
+      -- Função para debug (ver comando gerado)
+      local function debug_command()
+        local filetype = vim.bo.filetype
+        local filename = vim.fn.expand '%:p'
+        local basename = vim.fn.expand '%:t:r'
+        local dir = vim.fn.expand '%:p:h'
+
+        local cmd = ''
+        if filetype == 'c' then
+          cmd = string.format('cd "%s" && gcc "%s" -o "%s" && ./"%s"', dir, filename, basename, basename)
+        elseif filetype == 'cpp' then
+          cmd = string.format('cd "%s" && g++ "%s" -o "%s" && ./"%s"', dir, filename, basename, basename)
+        elseif filetype == 'python' then
+          cmd = string.format('cd "%s" && python3 "%s"', dir, filename) -- SEMPRE python3
+        elseif filetype == 'javascript' then
+          cmd = string.format('cd "%s" && node "%s"', dir, filename)
+        elseif filetype == 'typescript' then
+          cmd = string.format('cd "%s" && ts-node "%s"', dir, filename)
+        elseif filetype == 'java' then
+          cmd = string.format('cd "%s" && javac "%s" && java "%s"', dir, filename, basename)
+        end
+
+        cmd = cmd .. '; echo ""; echo "✅ Execução concluída! Pressione Enter para continuar..."; read'
+
+        vim.notify('Comando gerado:\n' .. cmd, vim.log.levels.INFO)
+        print('DEBUG - Comando: ' .. cmd)
+        print('DEBUG - Diretório: ' .. dir)
+        print('DEBUG - Arquivo: ' .. filename)
+        print('DEBUG - Nome base: ' .. basename)
+      end
+
+      -- Keymaps principais
+      vim.keymap.set('n', '<leader>rr', run_current_file, { desc = '[R]un [R]un current file' })
+      vim.keymap.set('n', '<leader>rt', '<Cmd>ToggleTerm<CR>', { desc = '[R]unner [T]oggle' })
+      vim.keymap.set('n', '<leader>rk', kill_terminal_process, { desc = '[R]unner [K]ill current process' })
+      vim.keymap.set('n', '<leader>rd', debug_command, { desc = '[R]unner [D]ebug command' })
+
+      -- Keymaps adicionais úteis
+      vim.keymap.set('n', '<leader>rs', '<Cmd>TermSelect<CR>', { desc = '[R]unner [S]elect terminal' })
+      vim.keymap.set('n', '<leader>rl', '<Cmd>ToggleTermSendCurrentLine<CR>', { desc = '[R]unner send [L]ine' })
+      vim.keymap.set('v', '<leader>rv', '<Cmd>ToggleTermSendVisualSelection<CR>', { desc = '[R]unner send [V]isual selection' })
+      vim.keymap.set('n', '<leader>rn', '<Cmd>ToggleTerm direction=horizontal<CR>', { desc = '[R]unner [N]ew terminal' })
+    end,
+  },
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
     opts = {
@@ -379,6 +492,11 @@ require('lazy').setup({
   },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
+  {
+    'pmizio/typescript-tools.nvim',
+    dependencies = { 'nvim-lua/plenary.nvim', 'neovim/nvim-lspconfig' },
+    opts = {},
+  },
   --
   -- This is often very useful to both group configuration, as well as handle
   -- lazy loading plugins that don't need to be loaded immediately at startup.
@@ -523,6 +641,9 @@ require('lazy').setup({
           },
         },
       }
+      -- Enable Telescope extensions if they are installed
+      pcall(require('telescope').load_extension, 'fzf')
+      pcall(require('telescope').load_extension, 'ui-select')
 
       -- Enable Telescope extensions if they are installed
       pcall(require('telescope').load_extension, 'fzf')
@@ -621,6 +742,70 @@ require('lazy').setup({
       --
       -- If you're wondering about lsp vs treesitter, you can check out the wonderfully
       -- and elegantly composed help section, `:help lsp-vs-treesitter`
+
+      local lspconfig = require 'lspconfig'
+      local servers = { 'html', 'cssls', 'ts_ls', 'clangd', 'tailwindcss' }
+
+      for _, lsp in ipairs(servers) do
+        lspconfig[lsp].setup {
+          capabilities = require('blink.cmp').get_lsp_capabilities(),
+        }
+      end
+      require('onedarkpro').setup {
+        colors = {
+          vaporwave = {
+            white = '#B4B7CF',
+            black = '#222435',
+            highlight = '#e2be7d',
+            virtual_text_hint = '#69b9c3',
+            virtual_text_information = '#53bdea',
+            virtual_text_warning = '#efed7b',
+            virtual_text_error = '#e98e8d',
+            diff_text = '#005869',
+            selection = '#2e3148',
+            diff_delete = '#501b20',
+            indentline = '#30334b',
+            diff_add = '#003e4a',
+            fg = '#B4B7CF',
+            line_number = '#545983',
+            git_hunk_change_inline = '#41483d',
+            comment = '#7679A7',
+            git_hunk_delete = '#502d30',
+            git_hunk_add = '#43554d',
+            git_delete = '#9a353d',
+            git_change = '#948B60',
+            git_add = '#109868',
+            gray = '#585B89',
+            float_bg = '#1c1e2c',
+            yellow = '#EAE852',
+            cursorline = '#2a2c41',
+            git_hunk_delete_inline = '#6f2e2d',
+            fg_gutter = '#353853',
+            bg_statusline = '#1d1f2d',
+            purple = '#c678dd',
+            blue = '#25ABE4',
+            color_column = '#2a2c41',
+            fg_gutter_inactive = '#B4B7CF',
+            inlay_hint = '#4a4d73',
+            bg = '#222435',
+            cyan = '#46A3AF',
+            red = '#E16765',
+            orange = '#EAA041',
+            git_hunk_add_inline = '#3f534f',
+            fold = '#2a2c41',
+            green = '#75BE78',
+          },
+        },
+        styles = {
+          comments = 'italic',
+          keywords = 'bold',
+        },
+        options = {
+          cursorline = true,
+          transparency = false,
+        },
+      }
+      vim.cmd 'colorscheme onedark'
 
       --  This function gets run when an LSP attaches to a particular buffer.
       --    That is to say, every time a new file is opened that is associated with
@@ -980,17 +1165,44 @@ require('lazy').setup({
     },
   },
   {
-    'catppuccin/nvim',
-    lazy = false,
-    name = 'catppuccin',
-    opts = {
-      flavour = 'mocha', -- força usar o mocha
-    },
+    'olimorris/onedarkpro.nvim',
+    priority = 1000, -- Ensure it loads first
   },
   {
-    'LazyVim/LazyVim',
-    opts = {
-      colorscheme = 'catppuccin',
+    'folke/trouble.nvim',
+    opts = {}, -- for default options, refer to the configuration section for custom setup.
+    cmd = 'Trouble',
+    keys = {
+      {
+        '<leader>xx',
+        '<cmd>Trouble diagnostics toggle<cr>',
+        desc = 'Diagnostics (Trouble)',
+      },
+      {
+        '<leader>xX',
+        '<cmd>Trouble diagnostics toggle filter.buf=0<cr>',
+        desc = 'Buffer Diagnostics (Trouble)',
+      },
+      {
+        '<leader>cs',
+        '<cmd>Trouble symbols toggle focus=false<cr>',
+        desc = 'Symbols (Trouble)',
+      },
+      {
+        '<leader>cl',
+        '<cmd>Trouble lsp toggle focus=false win.position=right<cr>',
+        desc = 'LSP Definitions / references / ... (Trouble)',
+      },
+      {
+        '<leader>xL',
+        '<cmd>Trouble loclist toggle<cr>',
+        desc = 'Location List (Trouble)',
+      },
+      {
+        '<leader>xQ',
+        '<cmd>Trouble qflist toggle<cr>',
+        desc = 'Quickfix List (Trouble)',
+      },
     },
   },
   -- Highlight todo, notes, etc in comments
